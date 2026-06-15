@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
 <title>Pixel TV — Live Sports TV</title>
 
 <!-- PWA Meta Tags -->
@@ -112,9 +112,24 @@
     font-size: 18px;
     letter-spacing: 1px;
     font-weight: 600;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
   }
 
-  .brand span { color: var(--accent); }
+  .brand span:first-child {
+    color: var(--accent);
+  }
+  
+  .brand .credit {
+    font-size: 8px;
+    font-family: var(--font-body);
+    font-weight: 400;
+    letter-spacing: normal;
+    margin-left: 6px;
+    opacity: 0.6;
+    white-space: nowrap;
+  }
 
   .btn-setup {
     background: var(--bg-elevated);
@@ -136,7 +151,8 @@
     position: absolute;
     top: 0;
     left: -340px;
-    width: 340px;
+    width: 85%;
+    max-width: 340px;
     height: 100%;
     background: var(--bg-panel);
     border-right: 1px solid var(--border);
@@ -259,17 +275,34 @@
     background: #000;
     position: relative;
   }
+  
   .video-container {
     flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
+    background: #000;
+    min-height: 0;
   }
+  
   video {
     width: 100%;
     height: 100%;
     object-fit: contain;
+    background: #000;
+  }
+
+  @media (max-width: 768px) {
+    .video-container {
+      aspect-ratio: 9 / 16;
+      width: 100%;
+      max-height: calc(100vh - 100px);
+    }
+    
+    video {
+      object-fit: contain;
+    }
   }
 
   .loading-overlay {
@@ -323,7 +356,10 @@
     transition: opacity 0.3s;
     z-index: 5;
   }
-  .video-container:hover .player-controls { opacity: 1; }
+  .video-container:hover .player-controls,
+  .video-container:active .player-controls {
+    opacity: 1;
+  }
   .ctrl-group { display: flex; align-items: center; gap: 14px; }
   .icon-btn {
     color: var(--text);
@@ -481,11 +517,59 @@
     transform: translateY(0);
   }
 
-  @media (max-width: 600px) {
-    .ctrl-group { gap: 10px; }
-    .player-controls { padding: 12px; }
-    .brand { font-size: 16px; }
-    .btn-setup { font-size: 10px; padding: 5px 8px; }
+  @media (max-width: 768px) {
+    .icon-btn, .tab-btn, .channel-item, .favorite-star, .btn-setup {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    
+    .ctrl-group {
+      gap: 20px;
+    }
+    
+    .vol-range {
+      display: none;
+    }
+    
+    .channel-item {
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+    
+    .ch-title {
+      font-size: 14px;
+    }
+    
+    .tab-btn {
+      padding: 10px 4px;
+      font-size: 11px;
+    }
+    
+    .btn-setup {
+      padding: 8px 16px;
+      font-size: 14px;
+    }
+    
+    .player-controls {
+      padding: 16px;
+    }
+    
+    .keyboard-hint {
+      display: none;
+    }
+    
+    .infobar .meta-title {
+      font-size: 12px;
+    }
+    
+    .brand {
+      font-size: 16px;
+    }
+    
+    .brand .credit {
+      font-size: 7px;
+      margin-left: 4px;
+    }
   }
 </style>
 </head>
@@ -498,7 +582,10 @@
       <button class="menu-toggle" id="menuOpenBtn">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
-      <div class="brand">PIXEL<span>TV</span></div>
+      <div class="brand">
+        PIXEL<span>TV</span>
+        <span class="credit">by Kazi Shihab</span>
+      </div>
     </div>
     <div class="nav-right">
       <button class="btn-setup" id="setupModalOpenBtn">
@@ -600,7 +687,6 @@
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
 <script>
   (function(){
-    // PWA Service Worker Registration
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js').then(reg => {
@@ -611,7 +697,6 @@
       });
     }
 
-    // Online/Offline Status
     window.addEventListener('online', () => {
       document.getElementById('offlineBadge').classList.remove('show');
       showToast('Back online');
@@ -621,7 +706,6 @@
       showToast('You are offline!', true);
     });
 
-    // PWA Install Prompt
     let deferredPrompt;
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
@@ -648,7 +732,6 @@
       document.querySelector('.nav-right').prepend(btn);
     }
 
-    // Built-in M3U Data
     const INBUILT_M3U_RAW = `#EXTM3U
 #EXTINF:-1 ,TNT Sports ARG
 https://1nyaler.streamhostingcdn.top/stream/30/index.m3u8
@@ -675,7 +758,6 @@ http://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master_3360.m3u8
     let retryCount = 0;
     const MAX_RETRIES = 2;
     
-    // DOM Elements
     const video = document.getElementById('mainVideoPlayer');
     const channelListEl = document.getElementById('channelListElement');
     const searchInput = document.getElementById('searchChannels');
@@ -692,7 +774,6 @@ http://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master_3360.m3u8
     const tabNews = document.getElementById('tabNews');
     const tabFav = document.getElementById('tabFavorites');
     
-    // Helper Functions
     function showToast(msg, isError = false) {
       toast.textContent = msg;
       toast.className = 'status-toast' + (isError ? ' error' : '');
@@ -922,7 +1003,6 @@ http://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master_3360.m3u8
       allChannels = [...inbuiltWithSource, ...externalWithSource, ...uploadedWithSource];
     }
     
-    // Event Listeners
     document.getElementById('menuOpenBtn').addEventListener('click', () => { sidebar.classList.add('open'); shield.classList.add('open'); renderCurrentList(); });
     document.getElementById('menuCloseBtn').addEventListener('click', () => { sidebar.classList.remove('open'); shield.classList.remove('open'); });
     shield.addEventListener('click', () => { sidebar.classList.remove('open'); shield.classList.remove('open'); });
@@ -992,7 +1072,6 @@ http://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master_3360.m3u8
       if(idx !== -1 && idx < list.length-1) playChannel(list[idx+1], list[idx+1].source);
     });
     
-    // Player Controls
     const playPauseBtn = document.getElementById('playPauseControl');
     playPauseBtn.addEventListener('click', () => video.paused ? video.play() : video.pause());
     video.addEventListener('play', () => playPauseBtn.innerHTML = '<svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>');
@@ -1007,21 +1086,51 @@ http://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master_3360.m3u8
     document.getElementById('fsControl').addEventListener('click', () => { if(document.fullscreenElement) document.exitFullscreen(); else video.parentElement.requestFullscreen(); });
     searchInput.addEventListener('input', () => renderCurrentList());
     
-    // ✅ Keyboard Shortcuts - FIXED: Won't trigger when typing in search box
+    let touchStartX = 0;
+    let touchEndX = 0;
+    const minSwipeDistance = 50;
+    
+    document.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    });
+    
+    document.addEventListener('touchend', (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      const diff = touchEndX - touchStartX;
+      
+      if (Math.abs(diff) > minSwipeDistance && !sidebar.classList.contains('open')) {
+        if (diff > 0) {
+          document.getElementById('prevTrackBtn').click();
+        } else {
+          document.getElementById('nextTrackBtn').click();
+        }
+      }
+    });
+    
+    let lastTap = 0;
+    video.addEventListener('touchstart', (e) => {
+      const now = Date.now();
+      if (now - lastTap < 300) {
+        e.preventDefault();
+        if (document.fullscreenElement) {
+          document.exitFullscreen();
+        } else {
+          video.parentElement.requestFullscreen();
+        }
+      }
+      lastTap = now;
+    });
+    
     document.addEventListener('keydown', (e) => {
-      // Check if search input or any input field is focused
       const isSearchFocused = document.activeElement === searchInput;
       const isModalOpen = setupModal.classList.contains('open');
       const isInputFocused = document.activeElement.tagName === 'INPUT' || 
-                             document.activeElement.tagName === 'TEXTAREA' ||
-                             document.activeElement.isContentEditable;
+                             document.activeElement.tagName === 'TEXTAREA';
       
-      // Don't trigger shortcuts when typing in search box or any input
       if (isSearchFocused || isModalOpen || isInputFocused) {
-        return; // Shortcuts disabled while typing
+        return;
       }
       
-      // Otherwise enable shortcuts
       if(e.code === 'Space') { 
         e.preventDefault(); 
         video.paused ? video.play() : video.pause(); 
@@ -1044,7 +1153,6 @@ http://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master_3360.m3u8
       }
     });
     
-    // Modal Tabs
     document.getElementById('modalTabUrl').addEventListener('click', () => {
       document.getElementById('modalTabUrl').classList.add('active');
       document.getElementById('modalTabFile').classList.remove('active');
@@ -1058,7 +1166,6 @@ http://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master_3360.m3u8
       document.getElementById('fileInputContainer').style.display = 'block';
     });
     
-    // Initialize
     inbuiltChannels = parseM3UText(INBUILT_M3U_RAW);
     combineAllChannels();
     loadExternalM3U();
